@@ -1,0 +1,3 @@
+www.illinois.edu
+www.scala-lang.org
+www.typelevel.org

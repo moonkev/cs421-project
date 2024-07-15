@@ -8,7 +8,7 @@ Examples demonstrating the scala.util.Try monad
 object TryExamples {
 
   /*
-  We lift execution into a Try.  As we map over the Try, we are passed the values of
+  Lift execution into a Try.  As we map over the Try, we are passed the values of
   successful computation.  If at any point a Throwable is thrown, the execution is
   short-circuited, and the Throwable is now lifted into the Try
    */
@@ -32,7 +32,7 @@ object TryExamples {
   }
 
   /*
-  Using a for-comprehension to extract and values to construct further Trys
+  Using a for-comprehension to extract values to construct further Trys
    */
   def composed: Try[Int] = {
     val wrapped1: Try[Int] = Try(MockApi.blockingCall)
@@ -45,7 +45,7 @@ object TryExamples {
   }
 
   /*
-  Similar to compose, except that here, when failure is reached,
+  Similar to compose except that  when failure is reached,
   the entire comprehension is short-circuited
    */
   def composedFailure: Try[Int] = {
@@ -59,7 +59,7 @@ object TryExamples {
   }
 
   /*
-  Success or failure, can be gleaned and the successful value or Throwable can
+  Success or failure can be gleaned and the successful value or Throwable can
   be extracted using pattern matching
    */
   def patternMatching: String =

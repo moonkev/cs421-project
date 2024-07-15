@@ -9,7 +9,7 @@ Examples demonstrating the scala.conncurent.Future monad
 object FutureExamples {
 
   /*
-  We lift execution into a Future.  As we map over the Future, we are passed the values of
+  Lift execution into a Future.  As we map over the Future, we are passed the values of
   successful computation.  If at any point a Throwable is thrown, the execution is
   short-circuited, and the Throwable is now lifted into the Future
    */
@@ -32,7 +32,7 @@ object FutureExamples {
   }
 
   /*
-  Using a for-comprehension to extract and values to construct further Futures
+  Using a for-comprehension to extract values to construct further Futures
    */
   def composed: Future[Int] = {
     val wrappedLongExec: Future[Int] = Future(MockApi.blockingCall)
@@ -55,11 +55,11 @@ object FutureExamples {
   }
 
   /*
-  Here we use a help class called Promise.  A promise contains a .success
+  Use a Promise to lift a callback's execution into a Future.  A Promise contains a .success
   method that we can call when we have a value to complete it with.  This
-  then completes an internal Future on the promise that can be accessed
-  via it's .future member.  This allows us to pass a callback that invokes
-  the .success method, but dealing with and collecting the result via
+  then completes an internal Future on the Promise that can be accessed
+  via it's .future member.  This allows us to pass a callback to a callback API that invokes
+  the .success method. Externally the user interfaces with and collects the result via
   the promises .future member.
    */
   def callbackLift: Future[Int] = {

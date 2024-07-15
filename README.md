@@ -141,108 +141,136 @@ so let's review two important monads scala provides to help facilitate this.
 
 ##### Try Monad
 While the main concern is to focus on concurrent development, we would be remiss not to discuss error handling.  Scala
-contains monad call `Try` that allows us to wrap a block of code.  Internally the unit function (remember just a
-single argument constructor in Scala), executes this code.  If the code succeeds, the resultant value is lifted into a
+contains monad call `Try` that allows us to wrap a block of code.  
+The unit function (remember just a single argument constructor in Scala), defines it's parameter as call-by-name,
+which in Scala allows us to pass in any arbitrary expression. If the code succeeds, the resultant value is lifted into a
 `Success` which implements the Try trait.  In Haskell parlance we can think of this as one of Try's type constructors.
 If the code throws, then the Throwable is caught and lifted into an instance of `Failure`.   This provides us with a
-convenient means to wrap and compose impure side effecting code.  Let us demonstrate -
+convenient means to wrap and compose impure side effecting code.  Following are examples to demonstrate Try -
 
+\
+_Lift execution into a Try.  As we map over the Try, we are passed the values of
+successful computation.  If at any point a Throwable is thrown, the execution is
+short-circuited, and the Throwable is now lifted into the Try_
 ```scala
+val simple: Try[String] = {
+  val longComputation = Try((1L until 100000L).foldRight(0L)((a, b) => a + b ))
+  longComputation
+    .map(_ - 4999949958L)
+    .map(answer => s"The meaning of life is $answer")
+}
+```
 
-  /*
-  We lift execution into a Try.  As we map over the Try, we are passed the values of
-  successful computation.  If at any point a Throwable is thrown, the execution is
-  short-circuited, and the Throwable is now lifted into the Try
-   */
-  def simple: Try[String] = {
-    val longComputation = Try((1L until 100000L).foldRight(0L)((a, b) => a + b ))
-    longComputation
-      .map(_ - 4999949958L)
-      .map(answer => s"The meaning of life is $answer")
+\
+_Using a for-comprehension to extract values to construct further Trys_
+```scala
+val composed: Try[Int] = {
+  val wrapped1: Try[Int] = Try(MockApi.blockingCall)
+  val wrapped2: Try[Int] = Try(MockApi.blockingCall)
+  for {
+    inputA <- wrapped1
+    inputB <- wrapped2
+    sum  <- Try(inputA + inputB)
+  } yield sum
+}
+```
+
+\
+_Success or failure can be gleaned and the successful value or Throwable can
+be extracted using pattern matching_
+```scala
+val patternMatching: String =
+  simple match {
+    case Success(result) => result
+    case Failure(exception) => exception.getLocalizedMessage
   }
-
-  /*
-  Similar to simple, except leveraging flatMap.  Useful if you want to sequence over
-  other functions that themselves return a Try, or possibly you want to short-circuit
-  to a Failure manually based on some condition
-   */
-  def bind: Try[String] = {
-    val longComputation = Try((1L until 100000L).foldRight(0L)((a, b) => a + b ))
-    longComputation
-      .flatMap(n => Try(n - 4999949958L))
-      .flatMap(_ => MockApi.tryFail)
-  }
-
-  /*
-  Using a for-comprehension to extract and values to construct further Trys
-   */
-  def composed: Try[Int] = {
-    val wrapped1: Try[Int] = Try(MockApi.blockingCall)
-    val wrapped2: Try[Int] = Try(MockApi.blockingCall)
-    for {
-      inputA <- wrapped1
-      inputB <- wrapped2
-      sum  <- Try(inputA + inputB)
-    } yield sum
-  }
-
-  /*
-  Similar to compose, except that here, when failure is reached,
-  the entire comprehension is short-circuited
-   */
-  def composedFailure: Try[Int] = {
-    val wrapped: Try[Int] = Try(MockApi.blockingCall)
-    val failure: Try[Int] = MockApi.tryFail
-    for {
-      inputA <- wrapped
-      inputB <- failure
-      sum  <- Try(inputA + inputB)
-    } yield sum
-  }
-
-  /*
-  Success or failure, can be gleaned and the successful value or Throwable can
-  be extracted using pattern matching
-   */
-  def patternMatching: String =
-    simple match {
-      case Success(result) => result
-      case Failure(exception) => exception.getLocalizedMessage
-    }
 ```
 
 
 ##### Future Monad
 
+While the Try monad gave us a way to compose simple imperative and/or side-effecting code, the execution still happens
+linearly within the same context of the Try.  That is to say it happens directly in the thread you created the Try in
+and the constructor of Try blocks while the code executes.  As with Try the Future monad's unit parameter is defined as 
+call-by-name.  This of course allows for passing in any arbitrarily large expression, but also due to the lazy nature
+of call-by-name allows us to defer the execution of that expression, and this is precisely what Future does.  One 
+nuance of the constructor definition for Future is that it is meant to be curried.  
+
+Let us step back for one second, and clarify the constructors for monads in Scala.  While they have been described
+as being single argument constructors, these are not normal constructors in the sense of direct instantiation of the
+object.  Scala allows defining a companion `object` alongside of a `class` definition.  To skip over some of the gory 
+details, these companion objects are often used to define static members of the class, among other things.  One special
+function that can be defined on companion objects is the `apply` method.  This then provides syntactic sugar that allows
+you to just specify the object/class name followed by parens, which will then invoke the apply method matching the
+argument signature you have passed if one exists. For example Future defines a companion object with an apply as follows
+
 ```scala
-
-/*
-We lift execution into a Future.  As we map over the Future, we are passed the values of
-successful computation.  If at any point a Throwable is thrown, the execution is
-short-circuited, and the Throwable is now lifted into the Future
- */
-def simple: Future[String] = {
-  val longComputation = Future((1L until 100000L).foldRight(0L)((a, b) => a + b ))
-  longComputation
-    .map(_ - 4999949958L)
-    .map(answer => s"The meaning of life is $answer")
+object Future {
+  //Other code truncated for brevity
+  
+  final def apply[T](body: => T)(implicit executor: ExecutionContext): Future[T] =
+    unit.map(_ => body)
 }
+```
+This then allows you to invoke the apply method (or pseudo-constructor if you will), as follows
+```scala
+val future = Future {
+  //arbitrary expression here
+}
+```
+Now this may leave you wondering about the second curried argument `executor` in the apply method.  This requires one
+further clarification.  As can be seen, the parameter is annotated with the `implicit` qualifier.  In Scala, an implicit
+parameter allows you to define an implicit value or function of that data type within certain designated scopes
+(I will not cover this scoping here as it can be quite complex).  At runtime this value will be used (or if a function
+will be invoked, and it's return value taken) and fed to the implicit argument.  Thus, you will typically have an
+implicit `ExecutionContext` in scope to feed to your Future.
 
-/*
-Similar to simple, except leveraging flatMap.  Useful if you want to sequence over
-other functions that themselves return a Future
- */
-def bind: Future[String] = {
+```scala
+//This would be defined somewhere within implicit scope with a real value 
+implicit val executionContext: ExecutionContext = ???
+
+val future = Future {
+  //arbitrary expression here
+} // The implicit curried executor parameter is automatically provided at runtime by the above executionContext
+```
+
+With all of that out of the way, it needs to be noted what that ExecutionContext really is.  It is simply a trait,
+which defines an execute method, which takes a java.lang.Runnable as it's only argument.  As you can guess, Future
+will wrap the expression you passed into it's constructor in a Runnable and then leverage this ExecutionContext to
+execute your code.   This has a major benefit in that you can control exactly how the Future executes your code
+concurrently.  Your ExecutionContext can be backed by a fixed thread, a thread pool or just run inline on the thread
+you are currently executing in.  Recall that Scala is not restricted to only the jvm.  The implementation that 
+transpiles to javascript is then able to use an ExecutionContext that instead can make use of a javascript Promise  
+to provide concurrency.
+
+Similar to how Try allows us to compose synchronous code, and encapsulate failure, Future allows us to do the same.
+The major difference here is that the code can be concurrent and more importantly parallel and/or asynchronous.
+The composed Futures need not share the same ExecutionContext, and can thus be managed in different ways.
+Whichever way that may be, we are now able to reason about the concurrent execution in a more natural way.  When
+composing futures via methods like for comprehensions it begins to look much like imperative code that is more
+familiar to the masses.  Following are some examples to demonstrate Future -
+
+\
+_Lift execution into a Future.  As we flatMap over the Future, we are passed the values of
+successful computation.  If at any point a Throwable is thrown, the execution is
+short-circuited, and the Throwable is now lifted into the Future.  It is worth noting that
+the execution of the closures inside the flatMap and the Futures that are generated within
+will each be executed in a different context._
+```scala
+val bind: Future[String] = {
   val longComputation = Future((1L until 100000L).foldRight(0L)((a, b) => a + b ))
   longComputation
     .flatMap(n => Future(n - 4999949958L))
     .flatMap(answer => Future(s"The meaning of life is $answer"))
 }
+```
 
-/*
-Using a for-comprehension to extract and values to construct further Futures
- */
-def composed: Future[Int] = {
+\
+_Using a for-comprehension to extract values to construct further Futures
+as with the above, the bits happening inside the for comprehension and in the yield itself
+are executed in a separate context from the Futures themselves_
+```scala
+val composed: Future[Int] = {
   val wrappedLongExec: Future[Int] = Future(MockApi.blockingCall)
   val nonBlocking: Future[Int] = MockApi.nonBlockingCall
   for {
@@ -251,26 +279,28 @@ def composed: Future[Int] = {
     sum  <- MockApi.nonBlockingCallWithInput(inputA, inputB)
   } yield sum
 }
+```
 
-/*
-This lifts a value directly into a Future, without invoking any concurrent execution.
-Useful when you want to avoid context switching or already know the value to return.
- */
-def simpleLift: Future[String] = {
+\
+_Lift a value directly into a Future, without invoking any concurrent execution.
+Useful when you want to avoid context switching or already know the value to return._
+```scala
+val simpleLift: Future[String] = {
   Future
     .successful(42)
     .map(answer => s"The meaning of life is $answer")
 }
+```
 
-/*
-Here we use a help class called Promise.  A promise contains a .success
+\
+_Use a Promise to lift a callback's execution into a Future.  A Promise contains a .success
 method that we can call when we have a value to complete it with.  This
-then completes an internal Future on the promise that can be accessed
-via it's .future member.  This allows us to pass a callback that invokes
-the .success method, but dealing with and collecting the result via
-the promises .future member.
- */
-def callbackLift: Future[Int] = {
+then completes an internal Future on the Promise that can be accessed
+via it's .future member.  This allows us to pass a callback to a callback API that invokes
+the .success method. Externally the user interfaces with and collects the result via
+the promises .future member._
+```scala
+val callbackLift: Future[Int] = {
   val promise = Promise[Int]()
   MockApi.nonBlockingCallWithCallback(promise.success)
   val callbackFuture: Future[Int] = promise.future

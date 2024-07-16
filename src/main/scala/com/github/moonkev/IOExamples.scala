@@ -1,7 +1,7 @@
 package com.github.moonkev
 
 import cats.effect.{IO, Resource}
-import cats.implicits.catsSyntaxTuple2Parallel
+import cats.implicits.{catsSyntaxList, catsSyntaxTuple3Parallel}
 
 import java.io.{BufferedReader, FileInputStream, InputStreamReader}
 import java.net.InetAddress
@@ -13,7 +13,7 @@ object IOExamples {
 
   // This is to simulate a long-running synchronous API call
   def simple: IO[String] =
-    IO.sleep(1.second) >> IO(42).map(answer => s"The meaning of life is $answer")
+    IO.sleep(1.second) >> IO.pure(42).map(answer => s"The meaning of life is $answer")
 
   // Lift an async callback based API into an IO
   def asyncCallback: IO[Int] =
@@ -25,11 +25,11 @@ object IOExamples {
 
   // Lift future into an IO
   def fromFuture: IO[Int] =
-    IO.fromFuture(IO.pure(MockApi.nonBlockingCall))
+    IO.fromFuture(IO(MockApi.nonBlockingCall))
 
-  // Execute two IO in parallel
-  def parallel: IO[(Int, Int)] =
-    (fromTry, fromFuture).parTupled
+  // Execute multiple IO in parallel
+  def parallel: IO[Seq[Int]] =
+    IO.parSequenceN(3)(Seq(asyncCallback, fromTry, fromFuture))
 
   private def fqdnFileResource: Resource[IO, BufferedReader] =
     for {
@@ -38,10 +38,10 @@ object IOExamples {
       bufferedReader <- Resource.fromAutoCloseable(IO(new BufferedReader(inputStreamReader)))
     } yield bufferedReader
 
-  def readFqdnList: IO[Seq[String]] =
+  def readFqdnList: IO[List[String]] =
     fqdnFileResource
       .use { reader => IO(reader.lines().collect(Collectors.toList())) }
-      .map(_.asScala.toSeq)
+      .map(_.asScala.toList)
 
   def resolveIP(hostname: String): IO[String] =
     IO(InetAddress.getByName(hostname))

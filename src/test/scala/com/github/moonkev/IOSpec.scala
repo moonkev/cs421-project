@@ -30,6 +30,12 @@ class IOSpec extends AsyncFlatSpec with AsyncIOSpec with Matchers {
     }
   }
 
+  "IOExamples.parallel" should "be a sequence of integer between 0 and 1998 inclusive" in {
+    IOExamples.parallel asserting {
+      res => forAll(res){ _ should(be >= 0 and be <= 1998) }
+    }
+  }
+
   "IOExamples.readFqdnList" should "read a list of fqdns from a file" in {
     IOExamples.readFqdnList asserting {
       _ shouldBe Seq(

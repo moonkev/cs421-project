@@ -1,7 +1,7 @@
 package com.github.moonkev
 
-import java.util.concurrent.Executors
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.util.{Failure, Random, Try}
 
 /*
@@ -14,17 +14,6 @@ import scala.util.{Failure, Random, Try}
 object MockApi {
 
   private val rng = new Random(System.currentTimeMillis())
-
-  /*
-   Supply a fresh single thread executor each time a new
-   Future is created in any of the below functions
-   The constructor for future will be passed the value from a call
-   to this function automatically do the ExecutionContext parameter
-   being annotated with the implicit qualifier
-   */
-  implicit def singleThreadExecutionContext: ExecutionContext =
-    ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor())
-
 
   /*
    This is to simulate a long-running synchronous API call

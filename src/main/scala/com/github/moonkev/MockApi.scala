@@ -54,11 +54,24 @@ object MockApi {
    that is controlled by the library and not the user
    */
   def nonBlockingCallWithCallback(cb: Int => Unit): Unit =
-    Future {
-      val rand = rng.nextInt(1000)
-      Thread.sleep(rand)
-      rand
-    }.foreach(cb)
+      Future {
+        val rand = rng.nextInt(1000)
+        Thread.sleep(rand)
+        rand
+      }.foreach(cb)
+
+  /*
+   This is to simulate an API such as a message broker API which will execute a callback upon an event
+   such as receiving a message on a channel.
+   */
+  def nonBlockingCallWithMultiCallback[A](cb: Int => A, n: Int): Future[IndexedSeq[A]] =
+    Future.sequence((0 until n).map { _ =>
+      Future {
+        val rand = rng.nextInt(1000)
+        Thread.sleep(rand)
+        rand
+      }.map(cb)
+    })
 
   /*
    Simulate a failure in the context of a Try

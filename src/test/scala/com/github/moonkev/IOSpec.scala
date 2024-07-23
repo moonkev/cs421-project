@@ -49,10 +49,4 @@ class IOSpec extends AsyncFlatSpec with AsyncIOSpec with Matchers {
       _ should fullyMatch regex """^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$"""
     }
   }
-
-  "IOExamples.traverse" should "resolve an IP address for www.illinois.edu" in {
-    IOExamples.resolveAll asserting {
-      ips => forAll(ips){ _ should fullyMatch regex """^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$""" }
-    }
-  }
 }

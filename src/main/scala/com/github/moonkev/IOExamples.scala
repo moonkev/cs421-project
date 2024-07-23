@@ -1,9 +1,8 @@
 package com.github.moonkev
 
 import cats.effect.{IO, Resource}
-import cats.implicits.{catsSyntaxList, catsSyntaxTuple3Parallel}
 
-import java.io.{BufferedReader, FileInputStream, InputStreamReader}
+import java.io.{BufferedReader, InputStreamReader}
 import java.net.InetAddress
 import java.util.stream.Collectors
 import scala.concurrent.duration.DurationInt
@@ -11,23 +10,35 @@ import scala.jdk.CollectionConverters.ListHasAsScala
 
 object IOExamples {
 
-  // This is to simulate a long-running synchronous API call
+  /*
+  Simulate long-running synchronous API call.  The >> operator in analogous to
+  a bind operation which doesn't actually pass the contained result of the
+  first IO to the second.
+   */
   def simple: IO[String] =
     IO.sleep(1.second) >> IO.pure(42).map(answer => s"The meaning of life is $answer")
 
-  // Lift an async callback based API into an IO
+  /*
+  Lift an async callback based API into an IO
+   */
   def asyncCallback: IO[Int] =
     IO.async_(cb => MockApi.nonBlockingCallWithCallback(num => cb(Right(num))))
 
-  // Lift try into an IO
+  /*
+  Lift try into an IO
+   */
   def fromTry: IO[Int] =
     IO.fromTry(MockApi.trySucceed)
 
-  // Lift future into an IO
+  /*
+  Lift future into an IO
+   */
   def fromFuture: IO[Int] =
     IO.fromFuture(IO(MockApi.nonBlockingCall))
 
-  // Execute multiple IO in parallel
+  /*
+  Execute multiple IO in parallel
+   */
   def parallel: IO[Seq[Int]] =
     IO.parSequenceN(3)(Seq(asyncCallback, fromTry, fromFuture))
 
@@ -46,7 +57,4 @@ object IOExamples {
   def resolveIP(hostname: String): IO[String] =
     IO(InetAddress.getByName(hostname))
       .map(_.getHostAddress)
-
-  def resolveAll =
-    readFqdnList.flatMap(addrs => IO.parTraverseN(3)(addrs)(resolveIP))
 }

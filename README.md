@@ -9,14 +9,6 @@ geometry: "left=2cm,right=2cm,top=2cm,bottom=2cm"
 Introduction
 ------------
 
-##### Where we've been
-
-In years past there has seemingly been a chasm between fully imperative languages and purely functional
-languages.  While functional programming languages maintained their significance in academia their use in practical
-application was often somewhat niche.  For example, while Erlang has been around since 1986, it's use outside of telecom
-was few and far between. Procedural imperative languages such as Fortran and C became the dominant player for some time,
-until eventually ceding much market share to object-oriented languages such as C++ and Java.  
-
 ##### Where we are
 
 Imperative languages can at times have difficulty navigating the concurrent and asynchronous
@@ -292,13 +284,14 @@ While Try and Future are powerful monads for composing imperative code in a more
 wrappers around an evaluation.  Although their unit parameters are call-by-name they are not truly lazy in  their
 evaluation of the expression that they wrap.  Try will execute immediately and Future will execute as soon as it's 
 ExecutionContext will allow it. They are themselves by nature side-effecting and can only be evaluated once.  What we
-really want to do is wrap the potential of an expression rather than its evaluation.  This is where effects enter
-the picture, as they provide us a container for the description of an action as opposed to the result of an action.
- Scala does not have an effect abstraction built-in, however the Scala ecosystem contains multiple libraries which 
-provide effect monads.  Arguably the most popular of these, and the one that will be used as an example is Cats Effect.
-The core entity in Cats Effect is the IO monad.  The IO monad functions in the same way as its identically named
-counterpart from Haskell.  IO allows you to wrap pure values as well as side-effecting actions, and then compose 
-arbitrary IO providing the illusion of complete functional purity.
+really want to do is wrap the potential of an expression rather than its evaluation.  
+
+This is where effects enter the picture, as they provide us a container for the description of an action as opposed to
+the result of an action. Scala does not have an effect abstraction built-in, however the Scala ecosystem contains
+multiple libraries which provide effect monads.  Arguably the most popular of these, and the one that will be used as an
+example is Cats Effect. The core entity in Cats Effect is the IO monad.  The IO monad functions in the same way as its 
+identically named counterpart from Haskell.  IO allows you to wrap pure values as well as side-effecting actions, and 
+then compose arbitrary IO providing the illusion of complete functional purity.
 
 IO has several methods for lifting pure values or actions into it.  In addition to pure values or arbitrary expressions
 there are conveniences to lift Scala Future, Try, Either and Option monads directly into an IO, traverse sequence types 
@@ -339,9 +332,6 @@ def parallel: IO[Seq[Int]] =
 fully qualified domain names from a text file, then resolves the IP address
 of those domain names through DNS._
 ```scala
-import cats.effect.std.Console
-import cats.effect.{ExitCode, IO, IOApp}
-
 object IOSampleApp extends IOApp {
 
   override def run(args: List[String]): IO[ExitCode] = {
@@ -449,12 +439,6 @@ def queueStream: Stream[IO, Int] =
 fully qualified domain names from a text file, then resolves the IP address
 of those domain names through DNS._
 ```scala
-import cats.effect.std.Console
-import cats.effect.{ExitCode, IO, IOApp}
-import fs2.Stream
-
-import java.net.InetAddress
-
 object FS2SampleApp extends IOApp {
 
   override def run(args: List[String]): IO[ExitCode] =
@@ -507,10 +491,12 @@ side-effecting code in a more discernible manner.  Scala was a logical choice fo
 being built to facilitate both paradigms.   Encouragingly, you can see many traditional imperative languages adding
 functional aspects as time goes on.  Newer languages like Rust and Dart, like Scala, are being designed from the start
 to be multi-paradigm.   In addition, it seems almost every language has one or more popular libraries to provide
-reactive extensions.   As systems grow in number of cores, be it CPU, GPU or TPU, I feel that language constructs
-and libraries such as these will increase in popularity.   To take it one step further, one can envision these 
-constructs will further support distributed systems with libraries increasingly taking the same approach to providing 
-location transparency and distributed concurrency.
+reactive extensions.   
+
+As systems grow in number of cores, be it CPU, GPU or TPU, I feel that language constructs
+and abstractions such as these will increase in popularity.   One can only guess that in the future these constructs will 
+expand to heavily support distributed systems.  One can envision libraries and languages increasingly taking the same 
+approach to providing location transparency and distributed concurrency as they do now to local concurrency.
 
 
 Appendix

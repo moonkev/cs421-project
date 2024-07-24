@@ -9,7 +9,7 @@ geometry: "left=2cm,right=2cm,top=2cm,bottom=2cm"
 Introduction
 ------------
 
-##### Where we've been \
+##### Where we've been
 
 In years past there has seemingly been a chasm between fully imperative languages and purely functional
 languages.  While functional programming languages maintained their significance in academia their use in practical
@@ -17,7 +17,7 @@ application was often somewhat niche.  For example, while Erlang has been around
 was few and far between. Procedural imperative languages such as Fortran and C became the dominant player for some time,
 until eventually ceding much market share to object-oriented languages such as C++ and Java.  
 
-##### Where we are \
+##### Where we are
 
 Imperative languages can at times have difficulty navigating the concurrent and asynchronous
 nature of the modern systems.  Often much care must be taken when writing concurrent (especially parallel) 
@@ -28,7 +28,7 @@ using polling or callback based APIs.  Recently, languages such as Rust, JavaScr
 async/await concept, to make non-blocking asynchronous code appear to function in a blocking manner, but this is
 typically just syntactic sugar on top of existing polling or callback based APIs.
 
-##### Where (I think) we're headed \
+##### Where (I think) we're headed
 
 Given that shifts in the interconnectivity, hardware and general interfacing patterns in the past have driven how we 
 develop software, it is only logical to think the same would arise today.  While functional languages have

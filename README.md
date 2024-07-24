@@ -40,7 +40,6 @@ libraries you are increasingly seeing these languages introduce pattern matching
 monad like containers.  The remainder of the paper will use one such fluent language, Scala, as well as supporting open
 source libraries to show the effectiveness of mixing imperative and functional concepts to build software that is
 performant, easier to reason about and easier to test.
-\
 
 Scala Fundamentals
 ------------------
@@ -69,46 +68,53 @@ Monad's in Scala are implemented by the existence of a single argument construct
 (`return` in Haskell) definition and a `flatMap` function to act as the bind definition.  Similar to the map
 function, flatMap carries the signature `M[A] => (A => M[B]) => M[B]`.   To demonstrate what a simple trait may look
 like enforcing flatMap, we present the following (omitting the unit definition here as this is implemented via
-a special constructor like syntactic sugar)
-\
+a special constructor like syntactic sugar):
+
+
 ```scala
 trait Monad[A] {
   def flatMap[B](f: A => Monad[B]): Monad[B]
 }
 ```
-\
+
+
 The above is enforcing via the inheritance usage of a trait.  If we wanted to define a type class using a
-trait we would have defined it something like
-\
+trait we would have defined it something like:
+
+
 ```scala
 trait Monad[M[A]] {
   def flatMap[B](m: M[A], f: A => M[B]): M[B]
 }
 ```
-\
+
+
 While explicit type classes do not exist for functor or monad, implementing the aforementioned map and flatMap provide
-the ability to use the functor or monad in a for comprehension.  When sequencing a single functor, of the form
-\
+the ability to use the functor or monad in a for comprehension.  When sequencing a single functor, of the form:
+
+
 ```scala
 for (element <- functor) yield ???
 ```
-\
+
+
 the map function will be used, and the above can be thought more of as a list comprehension in Haskell.  However, when
-sequencing over multiple monads, taking on the form
-\
+sequencing over multiple monads, taking on the form:
+
+
 ```scala
 for {
   element1 <- monad1
   element2 <- monad2
 } yield ???
 ```
-\
+
+
 the flatMap function will be used, and the above now functions more like the `do` notation of Haskell.  It is worth 
 noting, functor only objects do not support multi-sequencing due to the lack of a flatMap function.   Scala has many
 monads out of the box, including a few of the most popular ones of Haskell - List, Either and Maybe (called Option in
 Scala).  The main concern of this paper is to cover material in the context of concurrent programming, so let's review 
 two important monads scala provides to help facilitate this.
-\
 
 Try Monad
 ---------
@@ -119,10 +125,10 @@ The resultant value of the evaluation of the expression is lifted into a
 `Success` which implements the Try trait.  In Haskell parlance we can think of this as one of Try's type constructors.
 If the evaluation throws an exception, then the Throwable is caught and lifted into an instance of `Failure`.
 This provides us with a convenient means to wrap and compose impure side effecting code.
-The following is a demonstration of Try -
+The following is a demonstration of Try:
 
-\
-_Lift execution into a Try.  As we map over the Try, we are passed the values of
+
+* _Lift execution into a Try.  As we map over the Try, we are passed the values of
 successful computation.  If at any point a Throwable is thrown, the execution is
 short-circuited, and the Throwable is now lifted into the Try as a Failure_
 ```scala
@@ -134,8 +140,8 @@ val simple: Try[String] = {
 }
 ```
 
-\
-_Using a for-comprehension to extract values to construct further Trys_
+
+* _Using a for-comprehension to extract values to construct further Trys_
 ```scala
 val composed: Try[Int] = {
   val wrapped1: Try[Int] = Try(MockApi.blockingCall)
@@ -148,8 +154,8 @@ val composed: Try[Int] = {
 }
 ```
 
-\
-_Success or failure can be gleaned and the successful value or Throwable can
+
+* _Success or failure can be gleaned and the successful value or Throwable can
 be extracted using pattern matching_
 ```scala
 val patternMatching: String =
@@ -158,7 +164,7 @@ val patternMatching: String =
     case Failure(exception) => exception.getMessage
   }
 ```
-\
+
 
 Future Monad
 ------------
@@ -176,40 +182,36 @@ as being single argument constructors, these are not normal constructors in the 
 object.  Scala allows defining a companion `object` alongside of a `class` definition.  To skip over some of the gory 
 details, these companion objects are often used to define static members of a class.  One special
 function that can be defined on companion objects is the `apply` method.  This provides syntactic sugar that allows
-you specify only the object/class name followed by parens, which will then invoke the apply method matching the
-argument signature you have passed if one exists. For example Future defines a companion object with an apply as follows
-\
+you to specify only the object/class name followed by parens, which will then invoke the apply method matching the
+argument signature you have passed if one exists. For example Future defines a companion object with an apply as
+follows:
+
+
 ```scala
 object Future {
-  //Other code truncated for brevity
-  
   final def apply[T](body: => T)(implicit executor: ExecutionContext): Future[T] =
     unit.map(_ => body)
 }
 ```
-\
-This allows you to invoke the apply method (or pseudo-constructor if you will), as follows
-```scala
-val future = Future {
-  //arbitrary expression here
-}
-```
-\
+
+
 This may leave you wondering about the second curried argument `executor` in the apply method.  This requires one
 further clarification.  As can be seen, the parameter is annotated with the `implicit` qualifier.  In Scala, an implicit
 parameter allows you to define an implicit value or function of that data type within certain designated scopes
-(I will not cover the scoping semantics here as it can be quite complex).  At runtime this value or function 
+(I will not cover the scoping semantics here as it can be quite complex).  At runtime this value or function
 invocation are fed to the implicit argument.  Thus, you will typically have an implicit `ExecutionContext` in scope
-to feed to your Future.
-\
+to feed to your Future:
+
+
 ```scala
-/*
-This would be defined somewhere within implicit scope with a real value.
-Scala would automatically pass this to your curried Future constructor at runtime.
- */
+// Scala would automatically pass this to your curried Future constructor at runtime.
 implicit val executionContext: ExecutionContext = ???
+
+//arbitrary expression provided to future 
+val future = Future { ??? }
 ```
-\
+
+
 ExecutionContext is a trait which defines an execute method tha takes a java.lang.Runnable as it's only argument.
 Future will wrap the expression you passed into it's constructor in a Runnable and then leverage the ExecutionContext to
 execute your code.   This provides the benefit that you can control exactly how the Future executes your code
@@ -217,20 +219,20 @@ concurrently.  Your ExecutionContext can be backed by a fixed thread, a thread p
 you are currently executing in.  Recall that Scala is not restricted to only the jvm.  The implementation that 
 transpiles to javascript is then able to use an ExecutionContext that instead can make use of a javascript Promise  
 or some other abstraction to provide concurrency.
-
-Similar to how Try allows us to compose synchronous code, and encapsulate failure, Future allows us to do the same
+ Similar to how Try allows us to compose synchronous code, and encapsulate failure, Future allows us to do the same
 for concurrent tasks.  The composed Futures need not share the same ExecutionContext, and can thus be managed in
 different ways.  Whichever way that may be, we are now able to reason about the concurrent execution in a more natural
 way.  When composing futures via constructs like for comprehensions it begins to look very much much like imperative
-code.  The following is a demonstration of Future -
+code.  The following is a demonstration of Future:
 
-\
-_Lift execution into a Future.  As we flatMap over the Future, we are passed the values of
+
+* _Lift execution into a Future.  As we flatMap over the Future, we are passed the values of
 successful computation.  If at any point a Throwable is thrown, the execution is
 short-circuited, and the Throwable is now lifted into the Future.  It is worth noting that
 the execution of the closures inside the flatMap and the Futures that are generated within
 will each be executed in a different context._
-\
+
+
 ```scala
 val bind: Future[String] = {
   val longComputation = Future((1L until 100000L).foldRight(0L)((a, b) => a + b ))
@@ -239,8 +241,9 @@ val bind: Future[String] = {
     .flatMap(answer => Future(s"The meaning of life is $answer"))
 }
 ```
-\
-_Using a for-comprehension to extract values to construct further Futures
+
+
+* _Using a for-comprehension to extract values to construct further Futures
 as with the above, the bits happening inside the for comprehension and in the yield itself
 are executed in a separate context from the Futures themselves_
 ```scala
@@ -254,8 +257,9 @@ val composed: Future[Int] = {
   } yield sum
 }
 ```
-\
-_Lift a value directly into a Future, without invoking any concurrent execution.
+
+
+* _Lift a value directly into a Future, without invoking any concurrent execution.
 Useful when you want to avoid context switching and/or already know the value to return._
 ```scala
 val simpleLift: Future[String] = {
@@ -264,8 +268,9 @@ val simpleLift: Future[String] = {
     .map(answer => s"The meaning of life is $answer")
 }
 ```
-\
-_Use a Promise to lift a callback's execution into a Future.  A Promise contains a success
+
+
+* _Use a Promise to lift a callback's execution into a Future.  A Promise contains a success
 method that we can call when we have a value to complete it with.  This
 then completes an internal Future on the Promise that can be accessed
 via a future member property.  This allows us to pass a closure to a callback API that invokes
@@ -278,7 +283,7 @@ def callbackLift: Future[Int] = {
   promise.future
 }
 ```
-\
+
 
 Effectful Programming
 ---------------------
@@ -289,8 +294,7 @@ evaluation of the expression that they wrap.  Try will execute immediately and F
 ExecutionContext will allow it. They are themselves by nature side-effecting and can only be evaluated once.  What we
 really want to do is wrap the potential of an expression rather than its evaluation.  This is where effects enter
 the picture, as they provide us a container for the description of an action as opposed to the result of an action.
-
-Scala does not have an effect abstraction built-in, however the Scala ecosystem contains multiple libraries which 
+ Scala does not have an effect abstraction built-in, however the Scala ecosystem contains multiple libraries which 
 provide effect monads.  Arguably the most popular of these, and the one that will be used as an example is Cats Effect.
 The core entity in Cats Effect is the IO monad.  The IO monad functions in the same way as its identically named
 counterpart from Haskell.  IO allows you to wrap pure values as well as side-effecting actions, and then compose 
@@ -305,29 +309,33 @@ that are lightweight structures on top of native and/or virtual machine threads.
 execution via these fibers on top of normal threads, reducing OS/VM context switching and providing ways to 
 cancel/interrupt execution not typically possible in something like a typical JVM thread.  Programs are then a
 composition of IOs which are feed through the Cat Effect managed runtime. 
-Let's take a look at a couple examples of creating IO effect, and a sample program -
-\
-_Simulate long-running synchronous API call.  The >> operator in analogous to
+Let's take a look at a couple examples of creating IO effect, and a sample program:
+
+
+* _Simulate long-running synchronous API call.  The >> operator in analogous to
 a bind operation which doesn't actually pass the contained result of the
 first IO to the second._
 ```scala
 def simple: IO[String] =
   IO.sleep(1.second) >> IO.pure(42).map(answer => s"The meaning of life is $answer")
 ```
-\
-_Lift an async callback based API into an IO_
+
+
+* _Lift an async callback based API into an IO_
 ```scala
 def asyncCallback: IO[Int] =
   IO.async_(cb => MockApi.nonBlockingCallWithCallback(num => cb(Right(num))))
 ```
-\
-_Execute multiple IO in parallel_
+
+
+* _Execute multiple IO in parallel_
 ```scala
 def parallel: IO[Seq[Int]] =
   IO.parSequenceN(2)(Seq(simple, asyncCallback))
 ```
-\
-_Small example of a program written using Cats Effect.  This program reads 
+
+
+* _Small example of a program written using Cats Effect.  This program reads 
 fully qualified domain names from a text file, then resolves the IP address
 of those domain names through DNS._
 ```scala
@@ -351,7 +359,8 @@ object IOSampleApp extends IOApp {
   }
 }
 ```
-\
+
+
 In the example program we are extending the IOApp trait, which provides an abstract run function.  Internally this trait
 contains the runtime dependent entry point setup (i.e. `static void main` on the JVM), which will in turn execute your
 run function definition.  One simply need return an `IO[ExitCode]`, so the general idea is to compose several IO
@@ -396,17 +405,18 @@ through what can be thought of as a directed graph where each node represents so
 transforms such as map convert from one output type to another.  Others operate more closely to a bind, and expect a
 function that takes a prior output type and returns the monad type of the Stream.  Streams are seeded
 from a source of data that can be viewed as a (possibly infinite) generator of discrete values, such as a sequence type 
-or a socket connection. The following are examples of creating a Stream, and a sample program -
+or a socket connection. The following are examples of creating a Stream, and a sample program:
 
-\
-_Simple stream created from an apply (which takes a varargs set of elements).
+
+* _Simple stream created from an apply (which takes a varargs set of elements).
 The stream adds 100 to each element_
 ```scala
 def simpleStream: Stream[IO, Int] = 
   Stream(1, 2, 3, 4, 5).map(100.+)
 ```
-\
-_Create a stream that just continuously evaluates an IO.  Here the IO
+
+
+* _Create a stream that just continuously evaluates an IO.  Here the IO
 is lifted from an API call that returns a Future.   It filters the data
 for even numbers and takes the first 5 it sees._
 ```scala
@@ -416,8 +426,9 @@ def fromFutureWithFilter: Stream[IO, Int] =
     .filter(n => (n % 2) == 0)
     .take(5)
 ```
-\
-_Build a stream using Queue.  In this example, we use this queue
+
+
+* _Build a stream using Queue.  In this example, we use this queue
 in a closure that is passed to a callback based API.
 An internal stream is created from the evaluation of an IO,
 and thus we flatten out the surrounding stream to lift the internal one out._
@@ -432,11 +443,11 @@ def queueStream: Stream[IO, Int] =
     } yield Stream.fromQueueNoneTerminated(queue).map(n => n * 2 + 1000)
   }.flatten
 ```
-\
-_Small example of a program written using FS2.  This program reads
+
+
+* _Small example of a program written using FS2.  This program reads
 fully qualified domain names from a text file, then resolves the IP address
 of those domain names through DNS._
-\
 ```scala
 import cats.effect.std.Console
 import cats.effect.{ExitCode, IO, IOApp}
@@ -467,7 +478,8 @@ object FS2SampleApp extends IOApp {
       .as(ExitCode.Success)
 }
 ```
-\
+
+
 The example program achieves the same result as the Cats Effect sample we showed earlier, however using the Stream 
 abstraction. We first create a stream from IOExamples.readFqdnList which as before returns an `IO[List[String]]`.  We
 then use flatMap to perform a bind like operation over another Stream, which is created using Stream.emits.  
@@ -486,6 +498,7 @@ such as asList which will return the results as `M[List[O]]` where M is the mona
 of the output of the final transformation.   There are similar methods that perform operations such as a count on
 the elements or performing a right fold over the final elements.
 
+
 Conclusion
 ----------
 
@@ -498,6 +511,7 @@ reactive extensions.   As systems grow in number of cores, be it CPU, GPU or TPU
 and libraries such as these will increase in popularity.   To take it one step further, one can envision these 
 constructs will further support distributed systems with libraries increasingly taking the same approach to providing 
 location transparency and distributed concurrency.
+
 
 Appendix
 --------
@@ -525,6 +539,7 @@ To run the sample FS2 app
 ```shell
 $ ./gradlew runfs2 
 ```
+
 
 References
 ----------

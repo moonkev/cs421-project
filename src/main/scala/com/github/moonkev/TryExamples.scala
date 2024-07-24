@@ -65,6 +65,6 @@ object TryExamples {
   def patternMatching: String =
     simple match {
       case Success(result) => result
-      case Failure(exception) => exception.getLocalizedMessage
+      case Failure(exception) => exception.getMessage
     }
 }

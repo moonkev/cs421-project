@@ -65,12 +65,6 @@ object FutureExamples {
   def callbackLift: Future[Int] = {
     val promise = Promise[Int]()
     MockApi.nonBlockingCallWithCallback(promise.success)
-    val callbackFuture: Future[Int] = promise.future
-    val nonBlocking: Future[Int] = MockApi.nonBlockingCall
-    for {
-      inputA <- callbackFuture
-      inputB <- nonBlocking
-      sum  <- MockApi.nonBlockingCallWithInput(inputA, inputB)
-    } yield sum
+    promise.future
   }
 }

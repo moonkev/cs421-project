@@ -1,7 +1,6 @@
 plugins {
     id 'java'
     id 'scala'
-    id 'application'
     id('com.github.maiflai.scalatest') version '0.32'
 }
 
@@ -20,7 +19,6 @@ tasks.register('runcats', JavaExec) {
 tasks.register('runfs2', JavaExec) {
     mainClass = "com.github.moonkev.FS2SampleApp"
     classpath = sourceSets.main.runtimeClasspath
-    standardInput = System.in
 }
 
 dependencies {

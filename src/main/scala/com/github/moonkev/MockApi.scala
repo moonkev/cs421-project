@@ -74,7 +74,7 @@ object MockApi {
     })
 
   /*
-   Simulate a failure in the context of a Try
+   Lift a simple value into a try
    */
   lazy val trySucceed: Try[Int] = Try(42)
 
